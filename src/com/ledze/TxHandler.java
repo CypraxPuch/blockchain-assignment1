@@ -1,7 +1,6 @@
 package com.ledze;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 public class TxHandler {
@@ -27,16 +26,17 @@ public class TxHandler {
      * values; and false otherwise. </br>
      */
     public boolean isValidTx(Transaction tx) {
+        byte[] txHash = tx.getHash();
         // IMPLEMENT THIS
         // 1.
         boolean valid = true;
         UTXO _utxo = null;
-        for(Transaction.Input input : tx.getInputs() ){
-            _utxo = new UTXO(tx.getHash(), input.outputIndex);
+        for (Transaction.Input input : tx.getInputs()) {
+            _utxo = new UTXO(txHash, input.outputIndex);
             valid = pool.getAllUTXO().contains(_utxo);
-            if( !valid )break;
+            if (!valid) break;
         }
-        if( !valid ) return false;
+        if (!valid) return false;
 
         // 2.
         valid = tx.getInputs()
@@ -47,19 +47,15 @@ public class TxHandler {
         if (valid) return false;
 
         //3.
-        for (UTXO utxo : pool.getAllUTXO()) {
-            long howmany = tx.getOutputs()
+        for (Transaction.Input input : tx.getInputs()) {
+            UTXO _utxo2 = new UTXO(txHash, input.outputIndex);
+            long howmany = pool.getAllUTXO()
                     .stream()
-                    .filter(x -> x.equals(pool.getTxOutput(utxo)))
+                    .filter(x -> x.equals(_utxo2))
                     .count();
-            System.out.println("howmany:" + howmany);
-            if (howmany > 1) {
-                valid = false;
-            } else {
-                valid = true;
-            }
+            valid = howmany <= 1;
+            if (!valid) return false;
         }
-        if (!valid) return false;
 
         //4.
         for (Transaction.Output o : tx.getOutputs()) {
@@ -105,11 +101,11 @@ public class TxHandler {
 
                 if (lstOutputs.isEmpty()) {
                     ArrayList<Transaction.Output> lstFirstOutputs = new ArrayList<>();
-                    for( Transaction.Output o : possibleTxs[i].getOutputs() ){
-                        if(lstFirstOutputs.isEmpty()){
+                    for (Transaction.Output o : possibleTxs[i].getOutputs()) {
+                        if (lstFirstOutputs.isEmpty()) {
                             lstFirstOutputs.add(o);
-                        }else{
-                            if( !lstFirstOutputs.contains(o) ){
+                        } else {
+                            if (!lstFirstOutputs.contains(o)) {
                                 lstFirstOutputs.add(o);
                             }
                         }
@@ -131,10 +127,10 @@ public class TxHandler {
             }
         }
 
-        for(Transaction tx: l){
+        for (Transaction tx : l) {
             byte[] txHash = tx.getHash();
 
-            for(Transaction.Input input : tx.getInputs()){
+            for (Transaction.Input input : tx.getInputs()) {
                 pool.addUTXO(
                         new UTXO(txHash, input.outputIndex),
                         tx.getOutput(input.outputIndex)
@@ -144,22 +140,4 @@ public class TxHandler {
 
         return l.stream().toArray(Transaction[]::new);
     }
-
-   /* public static void main(String[] args) {
-        for (int i = 0; i < 10; i++) {
-            boolean doubleSpending = false;
-            System.out.println("i: "+i);
-            for (int j = 0; j < 10; j++) {
-                System.out.println("j: "+j);
-                doubleSpending = (j==8);
-                if(doubleSpending)break;
-            }
-            if(doubleSpending){
-                System.out.println("double spending");
-                break;
-            }
-        }
-
-    }*/
-
 }
