@@ -14,6 +14,7 @@ public class TxHandler {
     public TxHandler(UTXOPool utxoPool) {
         // IMPLEMENT THIS
         pool = new UTXOPool(utxoPool);
+        //pool = utxoPool;
     }
 
     /**
@@ -26,13 +27,12 @@ public class TxHandler {
      * values; and false otherwise. </br>
      */
     public boolean isValidTx(Transaction tx) {
-        byte[] txHash = tx.getHash();
         // IMPLEMENT THIS
         // 1.
         boolean valid = true;
         UTXO _utxo = null;
         for (Transaction.Input input : tx.getInputs()) {
-            _utxo = new UTXO(txHash, input.outputIndex);
+            _utxo = new UTXO(input.prevTxHash, input.outputIndex);
             valid = pool.getAllUTXO().contains(_utxo);
             if (!valid) break;
         }
@@ -41,14 +41,15 @@ public class TxHandler {
         // 2.
         valid = tx.getInputs()
                 .parallelStream()
-                .anyMatch(input -> !Crypto.verifySignature(tx.getOutput(input.outputIndex).address,
+                .anyMatch(input -> !Crypto.verifySignature(
+                        tx.getOutput(input.outputIndex).address,
                         tx.getRawDataToSign(input.outputIndex),
                         input.signature));
         if (valid) return false;
 
         //3.
         for (Transaction.Input input : tx.getInputs()) {
-            UTXO _utxo2 = new UTXO(txHash, input.outputIndex);
+            UTXO _utxo2 = new UTXO(input.prevTxHash, input.outputIndex);
             long howmany = pool.getAllUTXO()
                     .stream()
                     .filter(x -> x.equals(_utxo2))
